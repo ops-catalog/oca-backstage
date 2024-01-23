@@ -5,11 +5,11 @@ import { graphqlModuleCatalog } from '@frontside/backstage-plugin-graphql-backen
 
 const backend = createBackend();
 
+backend.add(legacyPlugin('catalog', import('./plugins/catalog')));
 backend.add(import('@backstage/plugin-app-backend/alpha'));
 backend.add(import('@backstage/plugin-auth-backend'));
 backend.add(import('@backstage/plugin-auth-backend-module-github-provider'));
 backend.add(import('@backstage/plugin-badges-backend'));
-backend.add(import('@backstage/plugin-catalog-backend/alpha'));
 // TODO:(awanlin) replace when this is completed: https://github.com/backstage/backstage/pull/20551
 backend.add(legacyPlugin('explore', import('./plugins/explore')));
 // TODO:(awanlin) update with import when available
