@@ -28,23 +28,32 @@ export class OpsProvider implements EntityProvider {
       throw new Error('DB not initilized');
     }
     const catalogObj: any[] = [];
-    const staff = await fetch('http://localhost:8080/api/catalog');
-    const d = await staff.json();
-    // TODO: refine mapping
+    const catalogResponse = await fetch('http://localhost:8080/api/catalog');
+    const d = await catalogResponse.json();
+
     for (const entity of d.data) {
-      console.log("===============", entity.kind,",",entity.metadata.name, "============");
-      const links = undefined;
+      let linkSource = entity.links || [];
+      const links = linkSource.map((link:{url:string, type:string}) => {
+        return {
+          url: link.url,
+          title: link.type
+        }
+      });
+      let apiVersion = 'backstage.io/v1alpha1';
       let kind = entity.kind;
       switch(kind) {
-        case 'Endpoint':
-          kind = 'Resource';
-          break;
         case 'Resource':
-          kind = 'Resource';
+          break;
+        case 'Component':
           break;
         default:
-          kind = 'Component';
+          apiVersion = entity.apiVersion;
       }
+      let dependenciesSource = entity.dependencies || { downstream: [], upstream: [], providedBy: ""};
+      let dependencies = (
+        dependenciesSource.downstream || []).concat(dependenciesSource.upstream || []
+        );
+
       let name = `${entity.metadata.name.replaceAll(" ", "")}`;
       let owner = '@backstage/maintainers';
       if (entity.contact.owner) {
@@ -58,9 +67,11 @@ export class OpsProvider implements EntityProvider {
       let sourceLabels = entity.metadata.labels || {};
       let labels = new Map(Object.entries(sourceLabels).map(([k,v]) => [k,String(v).replaceAll(" ", "").replaceAll("@", "_at_")]))
       let system = entity.classification.capability || "unknown";
+      let providedBy = dependenciesSource.providedBy || "";
+
       const catalogEntity = {
         kind: kind,
-        apiVersion: 'backstage.io/v1alpha1',
+        apiVersion: apiVersion,
         metadata: {
           description: `${entity.metadata.description}`,
           annotations: annotations,
@@ -68,7 +79,7 @@ export class OpsProvider implements EntityProvider {
           links,
           // name of the entity
           name: `${name}`,
-          title: `${entity.class}`,
+          title: `${name}`,
           tags: tags,
         },
         spec: {
@@ -80,11 +91,12 @@ export class OpsProvider implements EntityProvider {
             email: '',
             picture: '',
           },
+          dependsOn: dependencies,
           memberOf: [],
-          system: `${system}`
+          system: `${system}`,
+          parent: providedBy
         },
       };
-
       catalogObj.push(catalogEntity);
     }
 

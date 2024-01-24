@@ -17,6 +17,7 @@
 import { CatalogBuilder } from '@backstage/plugin-catalog-backend';
 import { PluginEnvironment } from '../types';
 import { OpsProvider } from './OpsProvider';
+import { OpsProcessor } from './OpsProcessor';
 
 export default async function createPlugin(
   env: PluginEnvironment,
@@ -24,6 +25,7 @@ export default async function createPlugin(
   const builder = CatalogBuilder.create(env);
   const frobs = new OpsProvider(env);
   builder.addEntityProvider(frobs);
+  builder.addProcessor(new OpsProcessor());
   const { processingEngine, router } = await builder.build();
   await processingEngine.start();
   await env.scheduler.scheduleTask({
